@@ -1,0 +1,40 @@
+#!/bin/sh
+# systemctl shim for the Twingate client on OpenRC systems.
+#
+# The twingate CLI hard-codes `systemctl` calls to manage its daemon and to
+# enable/disable autostart. With no systemd present those calls fail with
+# ENOENT, which aborts `twingate setup` and breaks `twingate start`/`stop`.
+# This translates the calls it makes to OpenRC's rc-service / rc-update;
+# anything unrecognized is a harmless no-op so the CLI never aborts.
+
+verb=""
+unit=""
+for a in "$@"; do
+	case "$a" in
+		-*) ;;  # ignore option flags: --user --global --quiet --no-pager ...
+		*)
+			if [ -z "$verb" ]; then verb="$a"
+			elif [ -z "$unit" ]; then unit="$a"
+			fi
+			;;
+	esac
+done
+
+# Only the main 'twingate' unit maps to a real service. The desktop-notifier
+# units, daemon-reload, unitless queries, etc. are no-ops.
+case "$unit" in
+	twingate|twingate.service) ;;
+	*) exit 0 ;;
+esac
+
+case "$verb" in
+	is-active)      rc-service twingate status >/dev/null 2>&1 ;;
+	status)         rc-service twingate status ;;
+	start)          rc-service twingate start ;;
+	stop)           rc-service twingate stop ;;
+	restart|reload) rc-service twingate restart ;;
+	enable)         rc-update add twingate default >/dev/null 2>&1; exit 0 ;;
+	disable)        rc-update del twingate default >/dev/null 2>&1; exit 0 ;;
+	is-enabled)     rc-update show default 2>/dev/null | grep -qw twingate ;;
+	*)              exit 0 ;;
+esac

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Wrapper for the Twingate CLI.
+#
+# The CLI shells out to `systemctl` for daemon management and autostart.
+# Where systemd is not the init system, expose a translation shim
+# (/usr/libexec/twingate/shims/systemctl) ahead of $PATH so those calls
+# reach OpenRC. On systemd hosts the real systemctl is used unchanged.
+if [ ! -d /run/systemd/system ]; then
+	PATH="/usr/libexec/twingate/shims:${PATH}"
+	export PATH
+fi
+exec /usr/libexec/twingate/twingate "$@"

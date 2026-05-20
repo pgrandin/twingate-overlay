@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+# OpenRC service for the Twingate client daemon.
+
+description="Twingate zero-trust remote access client"
+
+command="/usr/sbin/twingated"
+command_args="/etc/twingate/config.json"
+command_background="yes"
+pidfile="/run/twingate/twingated.pid"
+directory="/var/lib/twingate"
+output_log="/var/log/twingate/twingated.log"
+error_log="/var/log/twingate/twingated.log"
+
+depend() {
+	need dbus
+	use net
+}
+
+start_pre() {
+	checkpath -d -m 0755 /run/twingate
+	checkpath -d -m 0711 /var/lib/twingate
+	checkpath -d -m 0755 /var/log/twingate
+}

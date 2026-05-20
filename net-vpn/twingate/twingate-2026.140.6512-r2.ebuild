@@ -32,4 +32,16 @@ src_install()
 	# connections. Grant it to the plugdev group.
 	insinto /etc/polkit-1/rules.d
 	doins "${FILESDIR}"/01-org.freedesktop.NetworkManager.settings.modify.system.rules
+
+	# Upstream ships only a systemd unit; provide an OpenRC service too.
+	newinitd "${FILESDIR}"/twingate.initd twingate
+
+	# The twingate CLI hard-codes `systemctl` calls (setup, start, stop).
+	# Install a shim that translates them to OpenRC and front the CLI with a
+	# wrapper that puts the shim on PATH only when systemd is not the init
+	# system, so the package stays correct on systemd hosts as well.
+	exeinto /usr/libexec/twingate/shims
+	doexe "${FILESDIR}"/systemctl
+	mv "${D}"/usr/bin/twingate "${D}"/usr/libexec/twingate/twingate || die "Install failed!"
+	newbin "${FILESDIR}"/twingate.wrapper twingate
 }
